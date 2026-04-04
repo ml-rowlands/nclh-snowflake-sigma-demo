@@ -169,8 +169,8 @@ with col_diag:
         (1.1, 0.25, "Sigma Workbook",         "Forecast Dashboard\nWalk to Target · Scenarios", "#0B72E7", "square"),
     ]
 
-    # Arrows
-    arrows = [
+    # Connector lines (use add_shape — axref/ayref="paper" removed in Plotly 5.x)
+    connectors = [
         (0.5, 0.80, 0.5, 0.71),   # Source → RAW
         (0.5, 0.60, 0.5, 0.51),   # RAW → STAGING
         (0.5, 0.40, 0.5, 0.31),   # STAGING → Snowpark
@@ -178,12 +178,17 @@ with col_diag:
         (0.72, 0.05, 1.05, 0.20), # ANALYTICS → Sigma
         (0.72, 0.45, 1.05, 0.30), # STAGING → Sigma (driver distributions)
     ]
-    for x0, y0, x1, y1 in arrows:
-        fig.add_annotation(
-            x=x1, y=y1, ax=x0, ay=y0,
-            xref="paper", yref="paper", axref="paper", ayref="paper",
-            showarrow=True, arrowhead=2, arrowsize=1.2, arrowwidth=2,
-            arrowcolor="#94A3B8",
+    for x0, y0, x1, y1 in connectors:
+        fig.add_shape(type="line",
+            x0=x0, y0=y0, x1=x1, y1=y1,
+            xref="paper", yref="paper",
+            line=dict(color="#94A3B8", width=2),
+        )
+        # Small arrowhead dot at destination
+        fig.add_scatter(
+            x=[x1], y=[y1], mode="markers",
+            marker=dict(symbol="circle", size=7, color="#94A3B8"),
+            showlegend=False,
         )
 
     # Node boxes

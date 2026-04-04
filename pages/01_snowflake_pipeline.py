@@ -13,6 +13,27 @@ import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
 
+from data.generate import (
+    generate_historical_sailings, generate_future_sailings,
+    build_baseline_forecast, get_driver_stats,
+)
+
+# ── Self-loading: populate session state if navigated to directly ─────────────
+@st.cache_data(show_spinner="Loading data…")
+def _load():
+    hist   = generate_historical_sailings()
+    future = generate_future_sailings(hist)
+    fcst   = build_baseline_forecast(hist, future)
+    stats  = get_driver_stats(hist)
+    return hist, future, fcst, stats
+
+if "hist_df" not in st.session_state:
+    h, fu, fc, st_ = _load()
+    st.session_state["hist_df"]      = h
+    st.session_state["future_df"]    = fu
+    st.session_state["fcst_df"]      = fc
+    st.session_state["driver_stats"] = st_
+
 SNOW_BLUE  = "#29B5E8"
 SNOW_DARK  = "#0369A1"
 NAVY       = "#0B2545"
@@ -47,10 +68,6 @@ st.markdown(f"""
 hist_df  = st.session_state.get("hist_df")
 future_df = st.session_state.get("future_df")
 fcst_df  = st.session_state.get("fcst_df")
-
-if hist_df is None:
-    st.info("Loading data…")
-    st.stop()
 
 st.markdown("""
 <div class="snow-header">
@@ -228,7 +245,7 @@ with col_b:
         fill="toself", fillcolor="rgba(124,58,237,0.10)",
         line=dict(color="rgba(255,255,255,0)"), showlegend=True, name="80% Interval",
     ))
-    fig2.add_vline(x=months[split].isoformat(), line_dash="dash", line_color="#94A3B8", annotation_text="Forecast start")
+    fig2.add_vline(x=months[split].isoformat(), line_dash="dash", line_color="#94A3B8")
     fig2.update_layout(
         height=260, margin=dict(l=0,r=0,t=10,b=0),
         legend=dict(orientation="h", y=-0.25, font=dict(size=11)),

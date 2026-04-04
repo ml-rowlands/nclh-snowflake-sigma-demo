@@ -282,8 +282,19 @@ def build_baseline_forecast(hist_df: pd.DataFrame, future_df: pd.DataFrame) -> p
     fdf.loc[missing, grp.columns.difference(["trade","ship_class","season"])] = fdf_miss[grp.columns.difference(["trade","ship_class","season"])].values
 
     # Fill any remaining NaN with overall median
-    for col in ["lf_med","pd_med","disc_med","comm_med","air_med","air_cost_med","promo_med","tax_med","dir_med"]:
-        fdf[col].fillna(hist_df[col.replace("_med","").replace("lf","load_factor").replace("pd","gross_fare_per_diem").replace("disc","discount_rate").replace("comm","commission_rate").replace("air_cost","air_cost_per_pax").replace("air","air_inclusive_pct").replace("promo","promo_cost_per_pax").replace("tax","taxes_fees_per_pax").replace("dir","direct_booking_pct")].median(), inplace=True)
+    med_col_map = {
+        "lf_med":       "load_factor",
+        "pd_med":       "gross_fare_per_diem",
+        "disc_med":     "discount_rate",
+        "comm_med":     "commission_rate",
+        "air_med":      "air_inclusive_pct",
+        "air_cost_med": "air_cost_per_pax",
+        "promo_med":    "promo_cost_per_pax",
+        "tax_med":      "taxes_fees_per_pax",
+        "dir_med":      "direct_booking_pct",
+    }
+    for col, hist_col in med_col_map.items():
+        fdf[col] = fdf[col].fillna(hist_df[hist_col].median())
 
     fdf["load_factor"]        = fdf["lf_med"] * trend_lf
     fdf["gross_fare_per_diem"]= fdf["pd_med"] * trend_pd

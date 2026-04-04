@@ -20,7 +20,27 @@ import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
 
-from data.generate import apply_waterfall, get_driver_stats
+from data.generate import (
+    apply_waterfall, get_driver_stats,
+    generate_historical_sailings, generate_future_sailings,
+    build_baseline_forecast,
+)
+
+# ── Self-loading: populate session state if navigated to directly ─────────────
+@st.cache_data(show_spinner="Loading data…")
+def _load():
+    hist   = generate_historical_sailings()
+    future = generate_future_sailings(hist)
+    fcst   = build_baseline_forecast(hist, future)
+    stats  = get_driver_stats(hist)
+    return hist, future, fcst, stats
+
+if "hist_df" not in st.session_state:
+    h, fu, fc, st_ = _load()
+    st.session_state["hist_df"]      = h
+    st.session_state["future_df"]    = fu
+    st.session_state["fcst_df"]      = fc
+    st.session_state["driver_stats"] = st_
 
 # ── Palette ───────────────────────────────────────────────────────────────────
 SIGMA_BLUE  = "#0B72E7"
@@ -141,10 +161,6 @@ st.markdown(f"""
 hist_df    = st.session_state.get("hist_df")
 fcst_df    = st.session_state.get("fcst_df")
 driver_stats = st.session_state.get("driver_stats")
-
-if hist_df is None:
-    st.warning("Please load data from the main page first.")
-    st.stop()
 
 if driver_stats is None:
     driver_stats = get_driver_stats(hist_df)
@@ -303,8 +319,7 @@ with page_tab1:
 
         # Forecast start vline
         forecast_start = fmonthly["month"].min()
-        fig.add_vline(x=forecast_start.isoformat(), line_dash="dash",
-                      line_color="#CBD5E1", annotation_text="Forecast →", annotation_font_size=10)
+        fig.add_vline(x=forecast_start.isoformat(), line_dash="dash", line_color="#CBD5E1")
         fig.update_layout(
             height=280, margin=dict(l=0,r=0,t=5,b=0),
             legend=dict(orientation="h", y=-0.22, font=dict(size=11)),
@@ -668,10 +683,8 @@ with page_tab2:
             x=sim_ntrs, nbinsx=50,
             marker_color=SIGMA_BLUE, opacity=0.75, name="Simulated NTR",
         ))
-        fig_mc.add_vline(x=target_ntr_m, line_color=SIGMA_AMBER, line_width=2, line_dash="dash",
-                         annotation_text=f"Target ${target_ntr_m:,.0f}M", annotation_font_size=10)
-        fig_mc.add_vline(x=scenario_ntr_m, line_color=SIGMA_GREEN, line_width=2,
-                         annotation_text=f"Scenario ${scenario_ntr_m:,.0f}M", annotation_font_size=10)
+        fig_mc.add_vline(x=target_ntr_m,   line_color=SIGMA_AMBER, line_width=2, line_dash="dash")
+        fig_mc.add_vline(x=scenario_ntr_m, line_color=SIGMA_GREEN, line_width=2)
         fig_mc.update_layout(
             height=220, margin=dict(l=0,r=0,t=10,b=0),
             xaxis=dict(tickprefix="$", ticksuffix="M", showgrid=False),
